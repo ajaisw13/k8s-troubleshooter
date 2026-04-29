@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memory-stress-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memory-stress
+  template:
+    metadata:
+      labels:
+        app: memory-stress
+    spec:
+      containers:
+      - name: stress-container
+        image: progrium/stress
+        command: ["stress"]
+        args: ["--vm", "2", "--vm-bytes", "500M", "--vm-hang", "0"]
+        resources:
+          requests:
+            memory: 100Mi
+            cpu: 100m
+          limits:
+            memory: 600Mi
+            cpu: 200m

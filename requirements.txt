@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pydantic
+strands-agents
+boto3
+kubernetes
+requests
+streamlit

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kubernetes-agent"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "strands-agents",
+    "boto3",
+    "kubernetes",
+    "requests",
+    "streamlit",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

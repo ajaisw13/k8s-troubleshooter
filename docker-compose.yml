@@ -1,0 +1,23 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ~/.kube/config-embedded:/root/.kube/config:ro
+      - ~/.aws:/root/.aws:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  ui:
+    build: .
+    command: streamlit run ui/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - AGENT_API_URL=http://api:8080
+    depends_on:
+      - api

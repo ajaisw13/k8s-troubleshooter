@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: complex-scheduling-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: scheduling-test
+  template:
+    metadata:
+      labels:
+        app: scheduling-test
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: gpu
+                operator: In
+                values:
+                - nvidia-tesla-p100
+      containers:
+      - name: gpu-app
+        image: tensorflow/tensorflow:latest-gpu
+        resources:
+          requests:
+            nvidia.com/gpu: 1
+            cpu: 2
+            memory: 4Gi
+          limits:
+            nvidia.com/gpu: 1
+            cpu: 4
+            memory: 8Gi
