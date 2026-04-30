@@ -1,21 +1,31 @@
 import os
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+from urllib3.exceptions import MaxRetryError
 
 NAMESPACE = os.getenv("K8S_NAMESPACE", "default")
 
-_config_loaded = False
+# Cached after first call — in-cluster vs kubeconfig doesn't change at runtime
+_in_cluster: bool | None = None
+
+
+class KubernetesError(Exception):
+    pass
 
 
 def _load_config():
-    global _config_loaded
-    if _config_loaded:
-        return
-    try:
-        config.load_incluster_config()
-    except config.ConfigException:
+    global _in_cluster
+    if _in_cluster is None:
+        try:
+            config.load_incluster_config()
+            _in_cluster = True
+            return
+        except config.ConfigException:
+            _in_cluster = False
+    if not _in_cluster:
+        # Re-read every call: picks up minikube port changes after restart,
+        # and lets EKS/GKE exec plugins refresh tokens on their own schedule.
         config.load_kube_config()
-    _config_loaded = True
 
 
 def list_pods(namespace: str = NAMESPACE) -> list[str]:
@@ -25,7 +35,9 @@ def list_pods(namespace: str = NAMESPACE) -> list[str]:
         pods = v1.list_namespaced_pod(namespace=namespace)
         return [p.metadata.name for p in pods.items]
     except ApiException as e:
-        return []
+        raise KubernetesError(f"Failed to list pods in '{namespace}': {e.reason} (HTTP {e.status})")
+    except MaxRetryError:
+        raise KubernetesError("Cannot reach Kubernetes API server — is the cluster running and kubeconfig up to date?")
 
 
 def get_all_pods_status() -> str:
@@ -37,7 +49,9 @@ def get_all_pods_status() -> str:
             return "No pods found in namespace."
         return "\n\n".join(_format_pod_status(p) for p in pods.items)
     except ApiException as e:
-        return f"Error fetching pods: {e.reason}"
+        return f"Error fetching pods: {e.reason} (HTTP {e.status})"
+    except MaxRetryError:
+        return "Error: cannot reach Kubernetes API server — is the cluster running?"
 
 
 def get_pod_status(pod_name: str) -> str:
@@ -47,7 +61,9 @@ def get_pod_status(pod_name: str) -> str:
         pod = v1.read_namespaced_pod(name=pod_name, namespace=NAMESPACE)
         return _format_pod_status(pod)
     except ApiException as e:
-        return f"Error fetching pod status: {e.reason}"
+        return f"Error fetching pod '{pod_name}': {e.reason} (HTTP {e.status})"
+    except MaxRetryError:
+        return "Error: cannot reach Kubernetes API server — is the cluster running?"
 
 
 def get_pod_logs(pod_name: str) -> str:
@@ -60,7 +76,9 @@ def get_pod_logs(pod_name: str) -> str:
             tail_lines=100,
         )
     except ApiException as e:
-        return f"Error fetching pod logs: {e.reason}"
+        return f"Error fetching logs for '{pod_name}': {e.reason} (HTTP {e.status})"
+    except MaxRetryError:
+        return "Error: cannot reach Kubernetes API server — is the cluster running?"
 
 
 def get_events(pod_name: str = None) -> str:
@@ -81,7 +99,9 @@ def get_events(pod_name: str = None) -> str:
         ]
         return "\n".join(lines) if lines else "No events found."
     except ApiException as e:
-        return f"Error fetching events: {e.reason}"
+        return f"Error fetching events: {e.reason} (HTTP {e.status})"
+    except MaxRetryError:
+        return "Error: cannot reach Kubernetes API server — is the cluster running?"
 
 
 def check_cluster() -> str:
@@ -98,7 +118,9 @@ def check_cluster() -> str:
             f"Nodes: {node_summary}"
         )
     except ApiException as e:
-        return f"Error checking cluster: {e.reason}"
+        return f"Error checking cluster: {e.reason} (HTTP {e.status})"
+    except MaxRetryError:
+        return "Error: cannot reach Kubernetes API server — is the cluster running?"
 
 
 def _node_status(node) -> str:

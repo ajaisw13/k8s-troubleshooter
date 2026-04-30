@@ -11,15 +11,30 @@ from app.tools.events import get_events as tool_get_events
 from app.tools.cluster import check_cluster
 from app.tools.stackoverflow import search_stackoverflow
 
-_bedrock = boto3.client("bedrock-runtime", region_name="us-west-2")
+# Lazy-initialized so the module can be imported without AWS credentials.
+# Both are created on first use inside run_agent / _summarize.
+_bedrock = None
+_agent: Agent | None = None
 
-agent = Agent(
-    name="k8s-troubleshooter",
-    description="Diagnoses Kubernetes pod issues",
-    model=bedrock_model,
-    tools=[tool_get_pod_status, tool_get_pod_logs, tool_get_events, check_cluster, search_stackoverflow],
-    system_prompt=SYSTEM_PROMPT,
-)
+
+def _get_bedrock():
+    global _bedrock
+    if _bedrock is None:
+        _bedrock = boto3.client("bedrock-runtime", region_name="us-west-2")
+    return _bedrock
+
+
+def _get_agent() -> Agent:
+    global _agent
+    if _agent is None:
+        _agent = Agent(
+            name="k8s-troubleshooter",
+            description="Diagnoses Kubernetes pod issues",
+            model=bedrock_model,
+            tools=[tool_get_pod_status, tool_get_pod_logs, tool_get_events, check_cluster, search_stackoverflow],
+            system_prompt=SYSTEM_PROMPT,
+        )
+    return _agent
 
 
 def _summarize(text: str) -> str:
@@ -36,7 +51,7 @@ def _summarize(text: str) -> str:
             }
         ],
     }
-    resp = _bedrock.invoke_model(
+    resp = _get_bedrock().invoke_model(
         modelId="anthropic.claude-3-5-haiku-20241022-v1:0",
         body=json.dumps(body),
     )
@@ -63,7 +78,7 @@ def run_agent(user_input: str, pod_name: str = None, include_context: bool = Tru
                 f"Recent events:\n{all_events}\n\n"
                 f"User query: {user_input}"
             )
-    result = agent(user_input)
+    result = _get_agent()(user_input)
     full_text = ""
     for block in result.message.get("content", []):
         if "text" in block:

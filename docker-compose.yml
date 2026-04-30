@@ -7,9 +7,10 @@ services:
       - .env
     volumes:
       - ~/.kube/config-embedded:/root/.kube/config:ro
-      - ~/.aws:/root/.aws:ro
+      - ~/.aws:/root/.aws:ro                        # EKS: AWS credentials + config
+      - ~/.config/gcloud:/root/.config/gcloud:ro    # GKE: Application Default Credentials
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "host.docker.internal:host-gateway"         # local clusters only
   ui:
     build: .
     command: streamlit run ui/app.py --server.port 8501 --server.address 0.0.0.0
