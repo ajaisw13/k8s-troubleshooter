@@ -10,7 +10,7 @@ class Memory:
 
     def get(self):
         return self.history
-    
+
 
 memory = Memory()
 

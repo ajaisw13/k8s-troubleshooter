@@ -1,4 +1,5 @@
 import os
+
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 from urllib3.exceptions import MaxRetryError
@@ -37,7 +38,9 @@ def list_pods(namespace: str = NAMESPACE) -> list[str]:
     except ApiException as e:
         raise KubernetesError(f"Failed to list pods in '{namespace}': {e.reason} (HTTP {e.status})")
     except MaxRetryError:
-        raise KubernetesError("Cannot reach Kubernetes API server — is the cluster running and kubeconfig up to date?")
+        raise KubernetesError(
+            "Cannot reach Kubernetes API server — is the cluster running and kubeconfig up to date?"
+        )
 
 
 def get_all_pods_status() -> str:

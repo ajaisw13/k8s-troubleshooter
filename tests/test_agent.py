@@ -1,10 +1,7 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from app.agent.reasoning import analyze_issue
 from app.agent.agent import run_agent
-
+from app.agent.reasoning import analyze_issue
 
 # ── analyze_issue ──────────────────────────────────────────────────────────────
 
@@ -15,19 +12,25 @@ def test_crashloop_detected():
 
 
 def test_image_pull_backoff_detected():
-    result = analyze_issue(status="Pending", logs="", events="ImagePullBackOff: failed to pull image")
+    result = analyze_issue(
+        status="Pending", logs="", events="ImagePullBackOff: failed to pull image"
+    )
     assert result["root_cause"] == "Image pull failure"
     assert "image" in result["fix"].lower()
 
 
 def test_oom_killed_detected():
-    result = analyze_issue(status="Running", logs="OOMKilled: container exceeded memory limit", events="")
+    result = analyze_issue(
+        status="Running", logs="OOMKilled: container exceeded memory limit", events=""
+    )
     assert result["root_cause"] == "Out of memory"
     assert "memory" in result["fix"].lower()
 
 
 def test_pending_insufficient_resources():
-    result = analyze_issue(status="Pending", logs="", events="Insufficient cpu: 0/3 nodes available")
+    result = analyze_issue(
+        status="Pending", logs="", events="Insufficient cpu: 0/3 nodes available"
+    )
     assert result["root_cause"] == "Insufficient cluster resources"
     assert "resource" in result["fix"].lower()
 

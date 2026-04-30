@@ -1,14 +1,16 @@
 import json
+
 import boto3
 from strands import Agent
 
 from app.agent.prompts import SYSTEM_PROMPT
 from app.agent.reasoning import build_context
 from app.models.bedrock import bedrock_model
-from app.services.kubernetes import get_pod_status, get_pod_logs, get_events, get_all_pods_status
-from app.tools.pod import get_pod_status as tool_get_pod_status, get_pod_logs as tool_get_pod_logs
-from app.tools.events import get_events as tool_get_events
+from app.services.kubernetes import get_all_pods_status, get_events, get_pod_logs, get_pod_status
 from app.tools.cluster import check_cluster
+from app.tools.events import get_events as tool_get_events
+from app.tools.pod import get_pod_logs as tool_get_pod_logs
+from app.tools.pod import get_pod_status as tool_get_pod_status
 from app.tools.stackoverflow import search_stackoverflow
 
 # Lazy-initialized so the module can be imported without AWS credentials.
@@ -31,7 +33,10 @@ def _get_agent() -> Agent:
             name="k8s-troubleshooter",
             description="Diagnoses Kubernetes pod issues",
             model=bedrock_model,
-            tools=[tool_get_pod_status, tool_get_pod_logs, tool_get_events, check_cluster, search_stackoverflow],
+            tools=[
+                tool_get_pod_status, tool_get_pod_logs, tool_get_events,
+                check_cluster, search_stackoverflow,
+            ],
             system_prompt=SYSTEM_PROMPT,
         )
     return _agent
@@ -45,8 +50,8 @@ def _summarize(text: str) -> str:
             {
                 "role": "user",
                 "content": (
-                    "Summarize the following Kubernetes diagnostic response in 1-2 concise sentences "
-                    "highlighting the key issue and recommended action:\n\n" + text
+                    "Summarize the following Kubernetes diagnostic response in 1-2 concise "
+                    f"sentences highlighting the key issue and recommended action:\n\n{text}"
                 ),
             }
         ],

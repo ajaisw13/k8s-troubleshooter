@@ -1,4 +1,5 @@
 import os
+
 import requests
 import streamlit as st
 
@@ -73,14 +74,19 @@ pod_name = _pod if _pod != "All" else ""
 if st.session_state.get("last_selected_pod") != _pod:
     if "last_selected_pod" in st.session_state:
         label = f"pod **{_pod}**" if pod_name else "**all pods**"
-        st.session_state.messages.append({"role": "notification", "content": f"Switched to {label}"})
+        st.session_state.messages.append(
+            {"role": "notification", "content": f"Switched to {label}"}
+        )
         st.session_state.pop(f"context_sent_{_pod}", None)
     st.session_state.last_selected_pod = _pod
 
 if pod_name:
     st.info(f"Diagnosing pod **{pod_name}** in namespace **{namespace}**", icon="🎯")
 else:
-    st.info("Enter a pod name in the sidebar to enable pre-analysis, or ask a general question below.", icon="💡")
+    st.info(
+        "Enter a pod name in the sidebar to enable pre-analysis, or ask a general question below.",
+        icon="💡",
+    )
 
 # Init chat history
 if "messages" not in st.session_state:

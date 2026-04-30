@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-import pytest
 from fastapi.testclient import TestClient
 
 import app.main as main_module
@@ -54,14 +53,16 @@ class TestPodsEndpoint:
 
 class TestChatEndpoint:
     def test_returns_agent_response(self):
-        with patch("app.main.run_agent", return_value={"response": "Pod is crashing", "summary": "Check logs"}):
+        rv = {"response": "Pod is crashing", "summary": "Check logs"}
+        with patch("app.main.run_agent", return_value=rv):
             resp = client.post("/chat", json={"message": "Why is my pod crashing?"})
         assert resp.status_code == 200
         assert resp.json()["response"] == "Pod is crashing"
         assert resp.json()["summary"] == "Check logs"
 
     def test_passes_pod_name_to_agent(self):
-        with patch("app.main.run_agent", return_value={"response": "OOMKilled", "summary": "Increase memory"}) as mock:
+        rv = {"response": "OOMKilled", "summary": "Increase memory"}
+        with patch("app.main.run_agent", return_value=rv) as mock:
             client.post("/chat", json={"message": "Why?", "pod_name": "my-pod"})
         mock.assert_called_once_with("Why?", pod_name="my-pod", include_context=True)
 

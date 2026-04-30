@@ -1,5 +1,7 @@
 from strands.tools import tool
-from app.services.kubernetes import get_pod_status as _get_pod_status, get_pod_logs as _get_pod_logs
+
+from app.services.kubernetes import get_pod_logs as _get_pod_logs
+from app.services.kubernetes import get_pod_status as _get_pod_status
 
 
 @tool

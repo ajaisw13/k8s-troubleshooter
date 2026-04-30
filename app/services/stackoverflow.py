@@ -1,4 +1,5 @@
 import re
+
 import requests
 
 STACK_API = "https://api.stackexchange.com/2.3"
