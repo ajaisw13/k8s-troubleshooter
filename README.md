@@ -1,10 +1,36 @@
 # ⎈ K8s Troubleshooter
 
 [![CI](https://github.com/ajaisw13/k8s-troubleshooter/actions/workflows/ci.yml/badge.svg)](https://github.com/ajaisw13/k8s-troubleshooter/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 An AI-powered Kubernetes diagnostic agent. Describe a problem in plain English — the agent fetches pod status, logs, and events from your cluster, reasons over them using Claude on AWS Bedrock, and returns a root cause with a suggested fix.
 
-![demo placeholder — replace with a screen recording](docs/demo.gif)
+![demo](output.gif)
+
+---
+
+## Features
+
+- Diagnoses common pod failures: `CrashLoopBackOff`, `OOMKilled`, `ImagePullBackOff`, `Pending`
+- Pre-fetches pod status, logs, and events and injects them as agent context automatically
+- Scoped diagnostics — target a single pod or the entire namespace at once
+- Stack Overflow search tool for errors the agent hasn't seen before
+- Live pod selector — dropdown populated from your cluster in real time
+- Works with local clusters (minikube, kind) and cloud clusters (EKS, GKE)
+- Optional API key auth to protect the backend
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| UI | Streamlit |
+| Backend | FastAPI |
+| AI agent | [Strands](https://github.com/strands-agents/sdk-python) + Claude 3.5 Haiku via AWS Bedrock |
+| Kubernetes client | `kubernetes` Python SDK |
+| Containerisation | Docker + Docker Compose |
+| CI | GitHub Actions |
 
 ---
 
@@ -147,3 +173,12 @@ ruff check .
 ```
 
 Tests mock the Kubernetes client and Bedrock — no live cluster or AWS credentials needed.
+
+To run the full stack locally:
+
+```bash
+docker compose up --build
+```
+
+- **UI** → http://localhost:8501
+- **API docs** → http://localhost:8080/docs

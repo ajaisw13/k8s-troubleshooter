@@ -4,6 +4,8 @@ import requests
 import streamlit as st
 
 API_URL = os.getenv("AGENT_API_URL", "http://localhost:8000")
+_API_KEY = os.getenv("API_KEY", "")
+_HEADERS = {"X-API-Key": _API_KEY} if _API_KEY else {}
 
 st.set_page_config(
     page_title="K8s Troubleshooter",
@@ -23,13 +25,23 @@ with st.sidebar:
     # Fetch pod list only when namespace changes or not yet loaded
     if st.session_state.get("last_namespace") != namespace or "pod_list" not in st.session_state:
         try:
-            pod_resp = requests.get(f"{API_URL}/pods", params={"namespace": namespace}, timeout=5)
-            st.session_state.pod_list = pod_resp.json().get("pods", []) if pod_resp.ok else []
-        except Exception:
+            pod_resp = requests.get(
+                f"{API_URL}/pods", params={"namespace": namespace}, headers=_HEADERS, timeout=5
+            )
+            if pod_resp.ok:
+                st.session_state.pod_list = pod_resp.json().get("pods", [])
+                st.session_state.pod_list_error = None
+            else:
+                st.session_state.pod_list = []
+                st.session_state.pod_list_error = f"Failed to fetch pods: {pod_resp.status_code} {pod_resp.text}"
+        except Exception as e:
             st.session_state.pod_list = []
+            st.session_state.pod_list_error = str(e)
         st.session_state.last_namespace = namespace
 
     pod_list = st.session_state.pod_list
+    if st.session_state.get("pod_list_error"):
+        st.warning(st.session_state.pod_list_error, icon="⚠️")
     pod_options = ["All"] + pod_list
 
     # Set default to All on initial load
@@ -42,7 +54,7 @@ with st.sidebar:
 
     # Connection status
     try:
-        requests.get(f"{API_URL}/docs", timeout=2)
+        requests.get(f"{API_URL}/docs", headers=_HEADERS, timeout=2)
         st.success("Agent online", icon="🟢")
     except requests.RequestException:
         st.error("Agent offline", icon="🔴")
@@ -115,7 +127,7 @@ if prompt := st.chat_input("Describe the issue or ask a question…"):
                 if pod_name:
                     payload["pod_name"] = pod_name
                 st.session_state[context_sent_key] = True
-                resp = requests.post(f"{API_URL}/chat", json=payload, timeout=60)
+                resp = requests.post(f"{API_URL}/chat", json=payload, headers=_HEADERS, timeout=60)
                 resp.raise_for_status()
                 data = resp.json()
                 summary = data.get("summary", "")
