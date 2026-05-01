@@ -33,7 +33,9 @@ with st.sidebar:
                 st.session_state.pod_list_error = None
             else:
                 st.session_state.pod_list = []
-                st.session_state.pod_list_error = f"Failed to fetch pods: {pod_resp.status_code} {pod_resp.text}"
+                st.session_state.pod_list_error = (
+                    f"Failed to fetch pods: {pod_resp.status_code} {pod_resp.text}"
+                )
         except Exception as e:
             st.session_state.pod_list = []
             st.session_state.pod_list_error = str(e)
